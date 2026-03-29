@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DBS Release Monitor — Into The Box</title>
+  <style>
+    :root {
+      --bg: #04050a;
+      --bg2: #090b12;
+      --panel: rgba(10, 13, 20, 0.96);
+      --panel-2: rgba(16, 20, 30, 0.96);
+      --border: rgba(158, 120, 255, 0.22);
+      --border-strong: rgba(158, 120, 255, 0.45);
+      --text: #eef0f7;
+      --muted: #9fa7bd;
+      --dim: #71788d;
+      --accent: #9d7bff;
+      --accent-soft: rgba(157, 123, 255, 0.16);
+      --danger-soft: rgba(255, 255, 255, 0.03);
+      --shadow: 0 0 30px rgba(157, 123, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top center, rgba(157, 123, 255, 0.10), transparent 30%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+      color: var(--text);
+      font-family: "Consolas", "Courier New", monospace;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,0.03) 0px,
+          rgba(255,255,255,0.03) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+      opacity: 0.14;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(255,255,255,0.015), transparent 12%, transparent 88%, rgba(255,255,255,0.015));
+      box-shadow: inset 0 0 160px rgba(0,0,0,0.85);
+      pointer-events: none;
+    }
+
+    .screen-frame {
+      position: fixed;
+      inset: 12px;
+      pointer-events: none;
+      z-index: 0;
+      border: 1px solid rgba(157, 123, 255, 0.16);
+      border-radius: 18px;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.025),
+        inset 0 0 28px rgba(157,123,255,0.05),
+        0 0 40px rgba(157,123,255,0.05);
+      overflow: hidden;
+    }
+
+    .screen-frame::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 1px solid rgba(157,123,255,0.08);
+      border-radius: 12px;
+      background:
+        linear-gradient(90deg,
+          rgba(157,123,255,0.20) 0 40px,
+          transparent 40px calc(100% - 40px),
+          rgba(157,123,255,0.20) calc(100% - 40px) 100%),
+        linear-gradient(180deg,
+          rgba(157,123,255,0.12) 0 40px,
+          transparent 40px calc(100% - 40px),
+          rgba(157,123,255,0.12) calc(100% - 40px) 100%);
+      background-repeat: no-repeat;
+      background-size: 100% 1px, 1px 100%;
+    }
+
+    .screen-frame::after {
+      content: "";
+      position: absolute;
+      inset: 26px;
+      background:
+        linear-gradient(90deg,
+          rgba(157,123,255,0.35) 0 18px,
+          transparent 18px calc(100% - 18px),
+          rgba(157,123,255,0.35) calc(100% - 18px) 100%),
+        linear-gradient(180deg,
+          rgba(157,123,255,0.35) 0 18px,
+          transparent 18px calc(100% - 18px),
+          rgba(157,123,255,0.35) calc(100% - 18px) 100%);
+      background-repeat: no-repeat;
+      background-size: 100% 2px, 2px 100%;
+      opacity: 0.65;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1100px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: linear-gradient(180deg, rgba(4,6,10,0.98), rgba(9,11,18,0.98));
+      border-radius: 18px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.02),
+        0 0 0 2px rgba(157,123,255,0.05),
+        0 24px 80px rgba(0,0,0,0.55),
+        var(--shadow);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg,
+          rgba(157,123,255,0.12) 0 22px,
+          transparent 22px calc(100% - 22px),
+          rgba(157,123,255,0.12) calc(100% - 22px) 100%),
+        linear-gradient(180deg,
+          rgba(157,123,255,0.08) 0 22px,
+          transparent 22px calc(100% - 22px),
+          rgba(157,123,255,0.08) calc(100% - 22px) 100%);
+      background-repeat: no-repeat;
+      background-size: 100% 1px, 1px 100%;
+      opacity: 0.7;
+    }
+
+    .shell::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border: 1px solid rgba(157,123,255,0.07);
+      border-radius: 12px;
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: linear-gradient(180deg, rgba(20,24,36,0.95), rgba(11,14,22,0.95));
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    .topbar .left,
+    .topbar .right {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(157,123,255,0.9);
+      flex: 0 0 auto;
+    }
+
+    .main {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+    }
+
+    .frame {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border-radius: 14px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(157,123,255,0.06), transparent 28%);
+      pointer-events: none;
+    }
+
+    .frame-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
+    .hero {
+      padding: 22px 18px 18px;
+    }
+
+    .kicker {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      font-size: 0.74rem;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 4.2rem);
+      line-height: 0.95;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 18px rgba(157,123,255,0.14);
+    }
+
+    .subtitle {
+      margin: 14px 0 0;
+      max-width: 800px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.98rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+    }
+
+    .countdown-panel {
+      padding: 16px;
+    }
+
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .time-card {
+      border: 1px solid rgba(255,255,255,0.08);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+      border-radius: 12px;
+      padding: 18px 10px;
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 0 0 1px rgba(157,123,255,0.03);
+    }
+
+    .time-number {
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      text-shadow: 0 0 14px rgba(157,123,255,0.20);
+    }
+
+    .time-label {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+
+    .meta-panel {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .data-block {
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .data-label {
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      margin-bottom: 6px;
+    }
+
+    .data-value {
+      color: var(--text);
+      font-size: 0.96rem;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .status-panel {
+      padding: 16px;
+    }
+
+    .status-box {
+      border: 1px solid var(--border-strong);
+      background: linear-gradient(180deg, rgba(157,123,255,0.10), rgba(157,123,255,0.05));
+      border-radius: 12px;
+      padding: 14px;
+      color: #efeaff;
+      line-height: 1.6;
+      min-height: 66px;
+    }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.72rem;
+    }
+
+    .blink {
+      animation: blinkPulse 1.8s infinite;
+    }
+
+    @keyframes blinkPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .countdown-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .screen-frame {
+        inset: 8px;
+      }
+    }
+
+    @media (max-width: 460px) {
+      .main {
+        padding: 12px;
+      }
+
+      .hero,
+      .countdown-panel,
+      .meta-panel,
+      .status-panel {
+        padding: 14px;
+      }
+
+      .topbar,
+      .footer-bar {
+        font-size: 0.64rem;
+      }
+
+      .time-card {
+        min-height: 112px;
+      }
+
+      .screen-frame {
+        inset: 6px;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-frame" aria-hidden="true"></div>
+
+  <div class="shell">
+    <div class="topbar">
+      <div class="left">
+        <span class="indicator"><span class="dot blink"></span> DBS Terminal Link Active</span>
+        <span>Release Monitoring Interface</span>
+      </div>
+      <div class="right">
+        <span>Timezone: UTC-7</span>
+        <span id="clock">System Time Loading</span>
+      </div>
+    </div>
+
+    <main class="main">
+      <section class="frame">
+        <div class="frame-header">
+          <span>Department of Box Services</span>
+          <span>Authorized Public Release Display</span>
+        </div>
+        <div class="hero">
+          <div class="kicker">Official Release Monitor</div>
+          <h1>Into The Box</h1>
+          <p class="subtitle">
+            Public countdown interface for release-day access. Time remaining is displayed below under standard terminal observation format.
+          </p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <section class="frame">
+          <div class="frame-header">
+            <span>Countdown Array</span>
+            <span>Live Tracking</span>
+          </div>
+          <div class="countdown-panel">
+            <div class="countdown-grid">
+              <div class="time-card">
+                <div class="time-number" id="days">00</div>
+                <div class="time-label">Days</div>
+              </div>
+              <div class="time-card">
+                <div class="time-number" id="hours">00</div>
+                <div class="time-label">Hours</div>
+              </div>
+              <div class="time-card">
+                <div class="time-number" id="minutes">00</div>
+                <div class="time-label">Minutes</div>
+              </div>
+              <div class="time-card">
+                <div class="time-number" id="seconds">00</div>
+                <div class="time-label">Seconds</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="frame">
+          <div class="frame-header">
+            <span>Release Metadata</span>
+            <span>Read Only</span>
+          </div>
+          <div class="meta-panel">
+            <div class="data-block">
+              <div class="data-label">Project</div>
+              <div class="data-value">Into The Box</div>
+            </div>
+            <div class="data-block">
+              <div class="data-label">Release Date</div>
+              <div class="data-value">April 12, 2026</div>
+            </div>
+            <div class="data-block">
+              <div class="data-label">Timezone</div>
+              <div class="data-value">UTC-7</div>
+            </div>
+            <div class="data-block">
+              <div class="data-label">Display Status</div>
+              <div class="data-value">Public Countdown Active</div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="frame">
+        <div class="frame-header">
+          <span>System Status</span>
+          <span>Monitored</span>
+        </div>
+        <div class="status-panel">
+          <div class="status-box" id="status">
+            Countdown initialized. Awaiting release window.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="footer-bar">
+      <span>DBS Public Interface</span>
+      <span>UTC-7</span>
+      <span>Structured Release Monitor</span>
+    </div>
+  </div>
+
+  <script>
+    // April 12, 2026 at 12:00 AM UTC-7
+    const releaseDate = new Date("2026-04-12T07:00:00Z").getTime();
+
+    const daysEl = document.getElementById("days");
+    const hoursEl = document.getElementById("hours");
+    const minutesEl = document.getElementById("minutes");
+    const secondsEl = document.getElementById("seconds");
+    const statusEl = document.getElementById("status");
+    const clockEl = document.getElementById("clock");
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Etc/GMT+7",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+
+      const parts = formatter.formatToParts(now);
+      const map = {};
+      for (const part of parts) {
+        map[part.type] = part.value;
+      }
+
+      clockEl.textContent =
+        `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
+    }
+
+    function updateCountdown() {
+      const now = new Date().getTime();
+      const distance = releaseDate - now;
+
+      if (distance <= 0) {
+        daysEl.textContent = "00";
+        hoursEl.textContent = "00";
+        minutesEl.textContent = "00";
+        secondsEl.textContent = "00";
+        statusEl.textContent = "Release threshold reached. Public access state active.";
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((distance / (1000 * 60)) % 60);
+      const seconds = Math.floor((distance / 1000) % 60);
+
+      daysEl.textContent = pad(days);
+      hoursEl.textContent = pad(hours);
+      minutesEl.textContent = pad(minutes);
+      secondsEl.textContent = pad(seconds);
+
+      if (days > 1) {
+        statusEl.textContent = `Release monitoring stable. ${days} days remain until public release.`;
+      } else if (days === 1) {
+        statusEl.textContent = "Release monitoring stable. Final day approaching.";
+      } else {
+        statusEl.textContent = "Release monitoring stable. Final hours in progress.";
+      }
+    }
+
+    function tick() {
+      updateClock();
+      updateCountdown();
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
