@@ -37,12 +37,13 @@
 
     body {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       padding: 20px;
       position: relative;
-      overflow: hidden;
-    }
+      overflow-x: hidden;
+      overflow-y: auto;
+     }
 
     body::before {
       content: "";
@@ -391,6 +392,10 @@
     }
 
     @media (max-width: 700px) {
+      body {
+        align-items: flex-start;
+        padding: 12px;
+      }
       .countdown-grid {
         grid-template-columns: repeat(2, 1fr);
       }
@@ -507,6 +512,10 @@
             <div class="data-block">
               <div class="data-label">Display Status</div>
               <div class="data-value">Public Countdown Active</div>
+            </div>
+            <div class="data-block">
+              <div class="data-label">...</div>
+              <div class="data-value"><a href="https://patreon.com/IntoTheBoxStory">Read and Support on Patreon</a></div>
             </div>
           </div>
         </aside>
