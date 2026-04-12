@@ -458,7 +458,7 @@
           <div class="kicker">Official Release Monitor</div>
           <h1>Into The Box</h1>
           <p class="subtitle">
-            Public countdown interface for release-day access. Time remaining is displayed below under standard terminal observation format.
+            Public countdown interface for next release-day access. Time remaining is displayed below under standard terminal observation format.
           </p>
         </div>
       </section>
@@ -503,7 +503,7 @@
             </div>
             <div class="data-block">
               <div class="data-label">Release Date</div>
-              <div class="data-value">April 12, 2026</div>
+              <div class="data-value">April 26, 2026</div>
             </div>
             <div class="data-block">
               <div class="data-label">Timezone</div>
@@ -542,8 +542,8 @@
   </div>
 
   <script>
-    // April 12, 2026 at 12:00 AM UTC-7
-    const releaseDate = new Date("2026-04-12T07:00:00Z").getTime();
+    // April 26, 2026 at 12:00 AM UTC-7
+    const releaseDate = new Date("2026-04-26T07:00:00Z").getTime();
 
     const daysEl = document.getElementById("days");
     const hoursEl = document.getElementById("hours");
@@ -603,7 +603,7 @@
       secondsEl.textContent = pad(seconds);
 
       if (days > 1) {
-        statusEl.textContent = `Release monitoring stable. ${days} days remain until public release.`;
+        statusEl.textContent = `Release monitoring stable. ${days} days remain until next public release.`;
       } else if (days === 1) {
         statusEl.textContent = "Release monitoring stable. Final day approaching.";
       } else {
